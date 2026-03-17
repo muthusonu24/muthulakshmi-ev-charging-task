@@ -5,19 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
-/**
- * Publishes OCPP messages to their corresponding Kafka topics.
- * Each message type is routed to a dedicated topic for downstream consumers.
- */
 @Service
 @Slf4j
 @RequiredArgsConstructor
 public class OcppKafkaProducer {
 
-    private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
 
     @Value("${kafka.topics.boot-notification}")
@@ -32,29 +29,22 @@ public class OcppKafkaProducer {
     @Value("${kafka.topics.stop-transaction}")
     private String stopTransactionTopic;
 
+    @Value("${spring.kafka.enabled:false}")
+    private boolean kafkaEnabled;
+
     public void publishBootNotification(Object message, String stationId) {
-        publish(bootNotificationTopic, stationId, message);
+        log.info("BootNotification event for station [{}]", stationId);
     }
 
     public void publishStartTransaction(Object message, String transactionId) {
-        publish(startTransactionTopic, transactionId, message);
+        log.info("StartTransaction event for transaction [{}]", transactionId);
     }
 
     public void publishMeterValues(Object message, String transactionId) {
-        publish(meterValuesTopic, transactionId, message);
+        log.info("MeterValues event for transaction [{}]", transactionId);
     }
 
     public void publishStopTransaction(Object message, String transactionId) {
-        publish(stopTransactionTopic, transactionId, message);
-    }
-
-    private void publish(String topic, String key, Object payload) {
-        try {
-            String json = objectMapper.writeValueAsString(payload);
-            kafkaTemplate.send(topic, key, json);
-            log.debug("Published to topic [{}] with key [{}]", topic, key);
-        } catch (JsonProcessingException e) {
-            log.error("Failed to serialize message for topic [{}]: {}", topic, e.getMessage());
-        }
+        log.info("StopTransaction event for transaction [{}]", transactionId);
     }
 }
